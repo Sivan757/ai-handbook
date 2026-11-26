@@ -1,0 +1,33 @@
+{
+  "name": "ai-handbook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "lint": "node tools/lint-docs.mjs",
+    "freshness": "node tools/check-freshness.mjs",
+    "glossary": "node tools/gen-glossary.mjs",
+    "check": "npm run lint && npm run freshness && npm run conventions && npm run build && python3 tools/check-internal.py && python3 tools/check-public.py",
+    "conventions": "python3 tools/check-conventions.py"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "puppeteer-core": "^25.18.1",
+    "tailwindcss": "^4",
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "4.68.4"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.77.0",
+    "@vueuse/core": "^15.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "reka-ui": "^2.11.0",
+    "tailwind-merge": "^3.7.1"
+  }
+}

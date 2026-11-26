@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>order-service 模拟工程仓库 — AGENTS.md / 技能 / 工作流</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --panel-alt: #f0f4f8;
+      --border: #d8e1eb;
+      --text: #1b2430;
+      --muted: #5b6877;
+      --accent: #006ebb;
+      --accent-soft: rgba(0, 110, 187, 0.1);
+      --green: #008a3e;
+      --green-soft: rgba(0, 138, 62, 0.1);
+      --warn: #b45309;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    html.dark {
+      --bg: #0f141a;
+      --panel: #161d25;
+      --panel-alt: #1c2530;
+      --border: #2b3746;
+      --text: #e6edf5;
+      --muted: #93a3b5;
+      --accent: #5ba7e0;
+      --accent-soft: rgba(91, 167, 224, 0.15);
+      --green: #4dcb82;
+      --green-soft: rgba(77, 203, 130, 0.15);
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; }
+    .app { max-width: 1140px; margin: 0 auto; padding: 20px 16px 40px; }
+    .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .title-wrap { margin-right: auto; }
+    .title-wrap h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .repo-badge { font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .subtitle { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+    .btn { font-size: 12px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
+    .btn:hover { border-color: var(--accent); }
+    .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .mode-tab { font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; }
+    .mode-tab.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+    .workspace { display: grid; grid-template-columns: 290px 1fr; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--panel); min-height: 540px; }
+    @media (max-width: 780px) { .workspace { grid-template-columns: 1fr; } }
+    .sidebar { border-right: 1px solid var(--border); background: var(--panel-alt); padding: 10px 8px; overflow-y: auto; }
+    @media (max-width: 780px) { .sidebar { border-right: none; border-bottom: 1px solid var(--border); } }
+    .tree-root { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 8px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+    .tree-row { width: 100%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text); font-family: var(--mono); font-size: 12px; text-align: left; cursor: pointer; }
+    .tree-row:hover { background: var(--panel); }
+    .tree-row.dir { font-weight: 600; color: var(--muted); }
+    .tree-row.dir.lit-dir { color: var(--green); }
+    .tree-row.file.active { background: var(--panel); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .tree-row.file.lit { box-shadow: inset 3px 0 0 var(--green); background: var(--green-soft); }
+    .tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .caret { width: 12px; display: inline-block; text-align: center; font-size: 10px; flex-shrink: 0; }
+    .tag { font-family: var(--sans); font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--panel); color: var(--muted); border: 1px solid var(--border); flex-shrink: 0; }
+    .tag.warn { color: var(--warn); border-color: var(--warn); }
+    .viewer { display: flex; flex-direction: column; min-width: 0; }
+    .viewer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+    .file-path { font-family: var(--mono); font-size: 13px; font-weight: 700; margin-right: auto; }
+    .file-role { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+    .file-desc { padding: 10px 16px; font-size: 13px; color: var(--muted); background: var(--panel-alt); border-bottom: 1px solid var(--border); }
+    .code-pre { margin: 0; padding: 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre-wrap; word-break: break-word; flex: 1; }
+    .sim-panel { display: flex; flex-direction: column; flex: 1; }
+    .stepper { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--panel-alt); }
+    .step-btn { font-size: 12px; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; }
+    .step-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .sim-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .sim-card { border: 1px solid var(--border); border-radius: 9px; padding: 12px 14px; background: var(--panel-alt); }
+    .sim-card h3 { margin: 0 0 6px; font-size: 13px; color: var(--accent); }
+    .sim-card.warn h3 { color: var(--warn); }
+    .sim-card.ok h3 { color: var(--green); }
+    .sim-card p, .sim-card pre { margin: 0; font-size: 13px; white-space: pre-wrap; }
+    .sim-card pre { font-family: var(--mono); font-size: 12px; margin-top: 6px; padding: 10px; border-radius: 6px; background: var(--panel); border: 1px solid var(--border); }
+    .file-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--green); background: var(--green-soft); color: var(--green); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>order-service <span class="repo-badge">模拟工程仓库</span></h1>
+        <p class="subtitle">左侧按目录树展开或折叠文件夹；切到「工作流运行模拟」可看 AI 如何在各阶段读取对应文件。</p>
+      </div>
+      <button class="btn" id="themeBtn" type="button">切换深色 / 浅色</button>
+    </div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="files" type="button">仓库文件树</button>
+      <button class="mode-tab" data-mode="sim" type="button">工作流运行模拟（5 步）</button>
+    </div>
+
+    <div class="workspace">
+      <aside class="sidebar" id="treeSidebar"></aside>
+      <main class="viewer" id="mainViewer"></main>
+    </div>
+  </div>
+
+  <script id="repo-data" type="application/json">{"files":[{"path":"AGENTS.md","tag":"必读","role":"全局仓库约束","desc":"控制在一两屏以内，只写删掉就会让 AI 犯错的命令、目录边界与确认红线。","content":"# order-service\n\n订单与优惠券核销后端服务（TypeScript + PostgreSQL）。\n\n## 分支与开工前\n- 开工先执行 git pull --ff-only && git fetch origin\n- 从 origin/dev 拉特性分支（feat/* 或 fix/*），禁止直接向 dev / release / master 推送\n\n## 常用精确命令\n- 安装依赖：pnpm install --frozen-lockfile\n- 本地启动：pnpm dev\n- 跑单测：pnpm test -- <file>\n- 类型与检查：pnpm typecheck && pnpm lint\n\n## 目录边界与禁改区\n- src/modules/order/：标准业务模块样板，新建模块参照此目录分层\n- src/generated/：由 OpenAPI 脚本自动生成，严禁手工编辑\n- src/utils/price.ts：全仓统一金额计算工具，写新价格逻辑前先检索此文件\n\n## 必须先报方案、等确认才能干的操作\n- 新增或升级第三方依赖\n- 修改 db/migrations/ 下的数据库结构或迁移脚本\n- 执行 git push、删除分支或任何对测试/生产环境的写操作\n\n## 验收与汇报\n- 改接口必须附上新增或更新的集成测试命令与真实输出\n- 禁止修改既有测试断言来凑通过"},{"path":".gitlab-ci.yml","tag":"流水线","role":"自动化门禁","desc":"MR 触发的机器门禁：类型检查、全量单测、密钥扫描；失败时先读作业日志末尾。","content":"stages: [check, test, security]\n\ntypecheck_and_lint:\n  stage: check\n  script:\n    - pnpm install --frozen-lockfile\n    - pnpm typecheck && pnpm lint\n\nunit_and_integration:\n  stage: test\n  script:\n    - pnpm test -- --ci\n\nsecret_scan:\n  stage: security\n  script:\n    - gitleaks detect --no-git -v"},{"path":".agents/skills/new-api-module/SKILL.md","tag":"技能","role":"模块脚手架技能","desc":"开发新建业务模块时按需加载，固定目录分层、路由注册和单测样板。","content":"---\nname: new-api-module\ndescription: 在 order-service 中新建业务接口模块时使用；改前端或只修单函数 Bug 时不触发。\n---\n\n# 新建业务模块流程\n\n1. 先只读读取样板目录 `src/modules/order/`（controller、service、schema、test）。\n2. 新建目录 `src/modules/<module>/`，严格复用 DTO 校验写法与统一错误码枚举。\n3. 路由不会自动挂载，必须在 `src/router/index.ts` 手动注册一行模块路由。\n4. 涉及新增表或字段时，生成迁移方案后立刻暂停并报人确认，绝不自动执行 migrate。\n5. 生成完毕后先跑 `pnpm test -- src/modules/<module>/` 与 `pnpm typecheck`，贴出完整结果。"},{"path":".agents/skills/mr-self-review/SKILL.md","tag":"技能","role":"独立交叉评审技能","desc":"在独立新会话里触发，专抓 AI 写代码常见的改松断言、超范围和吞异常毛病。","content":"---\nname: mr-self-review\ndescription: 提 MR 前在干净新会话中交叉评审当前分支相对 origin/dev 的改动。\n---\n\n# 独立会话交叉评审清单\n\n执行 `git diff origin/dev...HEAD`，按以下五项逐条排查，只报有代码行号佐证的问题：\n\n1. **测试防线**：是否改松或删除了原有断言？新代码是否有边界空值/并发异常单测？\n2. **超范围改动**：是否误改 `src/generated/`、无关模块或未经确认升级了依赖？\n3. **重复造轮子**：是否绕开 `src/utils/price.ts` 等现有工具另起炉灶？\n4. **错误处理**：是否存在空的 try/catch 吞掉错误或硬编码假返回值？\n5. **凭据与调试残留**：是否残留 console.log、本地密钥或硬编码测试账号？"},{"path":".agents/workflows/feature-tdd.md","tag":"工作流","role":"四步开发工作流","desc":"把需求拆成「只读探查 → 测试先行 → 最小实现 → 独立交叉评审」，避免一口气写偏。","content":"# 标准需求开发工作流\n\n## 阶段 1：只读探查（Explore）\n- 阅读 `AGENTS.md`，检索相关业务目录与公共工具。\n- 输出：可复用符号清单、待改文件列表、潜在契约风险。\n\n## 阶段 2：测试先行（Red）\n- 根据验收边界编写失败的集成/单元测试并运行，贴出失败输出。\n- 未经开发者确认用例覆盖充分，不进入实现阶段。\n\n## 阶段 3：最小实现（Green）\n- 仅修改约定范围文件直到测试全绿，禁止改动测试断言迁就实现。\n- 执行 `pnpm typecheck && pnpm test` 保留实测输出。\n\n## 阶段 4：独立交叉评审（Review）\n- 关闭编码会话，新开干净会话加载 `mr-self-review` 技能审 diff。\n- 按「背景 / 改动 / 验证 / 评审与上线」四节起草 MR 描述。"},{"path":"src/modules/order/controller.ts","tag":"样板","role":"标准模块样板","desc":"AI 在第 1 阶段探查时读取的样板代码，用来对齐校验、公共函数和错误码格式。","content":"import { z } from 'zod'\nimport { calcDiscount } from '../../utils/price'\nimport { AppError } from '../../common/errors'\n\nexport const CreateOrderSchema = z.object({\n  userId: z.string().min(1),\n  items: z.array(z.object({ sku: z.string(), qty: z.number().int().positive() })).min(1),\n  couponCode: z.string().optional(),\n})\n\nexport async function createOrderHandler(input: unknown) {\n  const dto = CreateOrderSchema.parse(input)\n  const total = calcDiscount(dto.items, dto.couponCode)\n  if (total < 0) throw new AppError('INVALID_AMOUNT', '订单金额非法')\n  return { ok: true, total }\n}"},{"path":"src/utils/price.ts","tag":"复用","role":"全仓公共工具","desc":"AGENTS.md 明确要求先检索复用的公共函数，避免 AI 重复造金额计算轮子。","content":"export interface OrderItem { sku: string; qty: number; unitPrice?: number }\n\nexport function calcDiscount(items: OrderItem[], couponCode?: string): number {\n  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice ?? 100) * item.qty, 0)\n  if (!couponCode) return subtotal\n  // 实际业务按分计算并校验核销条件\n  return Math.max(0, subtotal - 20)\n}"},{"path":"src/generated/openapi.ts","tag":"禁改区","role":"自动生成产物","desc":"AGENTS.md 明确禁止手工编辑的目录，接口变更必须修改契约源文件后重跑生成命令。","content":"// AUTO-GENERATED FILE - DO NOT EDIT MANUALLY\n// Regenerate via: pnpm run gen:openapi\n\nexport interface CouponVerifyResponse {\n  valid: boolean\n  discountCents: number\n  reason?: string\n}"},{"path":"docs/adr/0001-coupon-lock.md","tag":"ADR","role":"架构决策记录","desc":"记下关键方案取舍与「否掉的方案」，防止半年后有人把老方案重提一遍。","content":"# 优惠券核销采用数据库行级状态机乐观锁\n\n状态：已实施\n\n## 背景\n高并发下同一张券在短时间内可能被多个下单请求同时读取为可用状态。\n\n## 决定\n在 `coupons` 表更新语句中带 `WHERE status = 'UNUSED' AND version = ?` 乐观锁。\n\n## 否掉的方案\n- **引入独立 Redis 分布式锁服务**：当前订单吞吐量低，引入跨库锁会增加网络超时和锁续期复杂度，后续 QPS 超过 5000 再重评。\n\n## 后果\n无需新增中间件，所有核销与订单创建在同一个数据库事务内完成。"}],"steps":[{"title":"1. 开场加载红线","lit":["AGENTS.md"],"prompt":"在订单创建链路增加优惠券核销校验。先只读探查可复用代码与约束，不要动文件。","aiAction":"自动读入根目录 AGENTS.md，锁定底线：不能改 src/generated/、价格逻辑先查 src/utils/price.ts、改数据库迁移必须先停下来确认。","output":"【只读探查计划】\n- 复用：src/utils/price.ts 的 calcDiscount\n- 样板参照：src/modules/order/controller.ts\n- 风险提示：若需给 coupons 表加 version 字段，将生成迁移脚本并暂停等你确认。","tone":"ok"},{"title":"2. 按需挂载技能","lit":[".agents/skills/new-api-module/SKILL.md","src/modules/order/controller.ts","src/utils/price.ts"],"prompt":"核销逻辑需要单独抽成 coupon 子模块，按仓库规范来。","aiAction":"识别到「新建模块」，按需载入 .agents/skills/new-api-module/SKILL.md，照着 order/controller.ts 的 Zod 校验与 AppError 写法生成骨架，并复用 price.ts。","output":"【已对齐项目技能】\n1. 已按 order/ 结构创建 src/modules/coupon/\n2. 已在 src/router/index.ts 手动注册一行路由\n3. 已记录需求字段变更，等待确认是否生成迁移脚本。","tone":"ok"},{"title":"3. 测试先行（红灯）","lit":[".agents/workflows/feature-tdd.md"],"prompt":"先写过期、门槛不足、并发重复核销三条测试并跑出失败输出，确认前不写业务代码。","aiAction":"遵循 feature-tdd.md 阶段 2，先写 coupon.test.ts 并执行 pnpm test，确认 3 条断言全部如期报错。","output":"$ pnpm test -- src/modules/coupon/coupon.test.ts\nFAIL 3 tests: expected 400 INVALID_COUPON, received 200","tone":"warn"},{"title":"4. 最小实现（绿灯）","lit":[".agents/workflows/feature-tdd.md","AGENTS.md"],"prompt":"测试覆盖够了，现在实现核销逻辑直到全部通过，禁止改动测试断言。","aiAction":"只修改 src/modules/coupon/ 与关联调用点，复用 calcDiscount 与乐观锁条件，再跑测试与类型检查。","output":"$ pnpm test -- src/modules/coupon/coupon.test.ts && pnpm typecheck\nPASS 3 tests (0 skipped) · Typecheck 0 errors","tone":"ok"},{"title":"5. 新会话交叉评审","lit":[".agents/skills/mr-self-review/SKILL.md",".gitlab-ci.yml","src/generated/openapi.ts"],"prompt":"（新开干净会话）加载 mr-self-review 技能，评审当前分支相对 origin/dev 的全部 diff。","aiAction":"脱离编码上下文偏见，逐条核对测试断言、src/generated/ 禁改区与调试残留，拦下提交前遗漏。","output":"【交叉评审结论】\n- [需修改] coupon.service.ts:42 遗留一行 console.log(couponCode)\n- [已确认] 既有测试断言未被改松，未动 src/generated/openapi.ts，未新增依赖。","tone":"warn"}]}</script>
+  <script>
+    (function () {
+      const data = JSON.parse(document.getElementById('repo-data').textContent);
+      const REPO_FILES = data.files;
+      const SIM_STEPS = data.steps;
+
+      function buildTree(files) {
+        const root = { name: '', path: '', isDir: true, children: [] };
+        for (const f of files) {
+          const parts = f.path.split('/');
+          let cur = root;
+          parts.forEach((part, idx) => {
+            const isLast = idx === parts.length - 1;
+            const nodePath = parts.slice(0, idx + 1).join('/');
+            let child = cur.children.find((c) => c.name === part);
+            if (!child) {
+              child = { name: part, path: nodePath, isDir: !isLast, file: isLast ? f : null, children: [] };
+              cur.children.push(child);
+            }
+            cur = child;
+          });
+        }
+        function sortNodes(nodes) {
+          nodes.sort((a, b) => (a.isDir !== b.isDir ? (a.isDir ? -1 : 1) : a.name.localeCompare(b.name)));
+          nodes.forEach((n) => sortNodes(n.children));
+        }
+        sortNodes(root.children);
+        return root.children;
+      }
+
+      const TREE = buildTree(REPO_FILES);
+      const openDirs = new Set([
+        '.agents', '.agents/skills', '.agents/skills/new-api-module', '.agents/skills/mr-self-review',
+        '.agents/workflows', 'docs', 'docs/adr', 'src', 'src/modules', 'src/modules/order', 'src/utils', 'src/generated'
+      ]);
+
+      let mode = 'files';
+      let currentFile = REPO_FILES[0].path;
+      let simIndex = 0;
+
+      const treeSidebar = document.getElementById('treeSidebar');
+      const mainViewer = document.getElementById('mainViewer');
+
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function hasLitDescendant(node, litSet) {
+        if (!node.isDir) return litSet.has(node.path);
+        return node.children.some((c) => hasLitDescendant(c, litSet));
+      }
+
+      function renderNodes(nodes, depth, litSet) {
+        let out = '';
+        for (const node of nodes) {
+          const pad = 8 + depth * 14;
+          if (node.isDir) {
+            const isOpen = openDirs.has(node.path);
+            const dirLit = hasLitDescendant(node, litSet);
+            out += '<button type="button" class="tree-row dir' + (dirLit ? ' lit-dir' : '') + '" style="padding-left:' + pad + 'px" data-dir="' + escapeHtml(node.path) + '">' +
+              '<span class="caret">' + (isOpen ? '▾' : '▸') + '</span>' +
+              '<span class="tree-name">📁 ' + escapeHtml(node.name) + '/</span>' +
+            '</button>';
+            if (isOpen) out += renderNodes(node.children, depth + 1, litSet);
+          } else {
+            const isActive = mode === 'files' && node.path === currentFile;
+            const isLit = litSet.has(node.path);
+            const warnTag = node.file.tag === '禁改区' ? ' warn' : '';
+            out += '<button type="button" class="tree-row file' + (isActive ? ' active' : '') + (isLit ? ' lit' : '') + '" style="padding-left:' + (pad + 14) + 'px" data-path="' + escapeHtml(node.path) + '">' +
+              '<span class="tree-name">📄 ' + escapeHtml(node.name) + '</span>' +
+              '<span class="tag' + warnTag + '">' + escapeHtml(node.file.tag) + '</span>' +
+            '</button>';
+          }
+        }
+        return out;
+      }
+
+      function renderSidebar() {
+        const litSet = new Set(mode === 'sim' ? SIM_STEPS[simIndex].lit : []);
+        treeSidebar.innerHTML = '<div class="tree-root">📦 order-service/</div>' + renderNodes(TREE, 0, litSet);
+
+        treeSidebar.querySelectorAll('[data-dir]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const p = btn.getAttribute('data-dir');
+            if (openDirs.has(p)) openDirs.delete(p);
+            else openDirs.add(p);
+            renderSidebar();
+          });
+        });
+
+        treeSidebar.querySelectorAll('[data-path]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            currentFile = btn.getAttribute('data-path');
+            mode = 'files';
+            syncModeTabs();
+            render();
+          });
+        });
+      }
+
+      function renderMain() {
+        if (mode === 'files') {
+          const f = REPO_FILES.find((x) => x.path === currentFile) || REPO_FILES[0];
+          mainViewer.innerHTML =
+            '<div class="viewer-head">' +
+              '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
+              '<span class="file-role">' + escapeHtml(f.role) + '</span>' +
+              '<button class="btn" id="copyFileBtn" type="button">复制文件内容</button>' +
+            '</div>' +
+            '<div class="file-desc">' + escapeHtml(f.desc) + '</div>' +
+            '<pre class="code-pre">' + escapeHtml(f.content) + '</pre>';
+
+          document.getElementById('copyFileBtn').addEventListener('click', async (e) => {
+            try {
+              await navigator.clipboard.writeText(f.content);
+              e.target.textContent = '已复制';
+              setTimeout(() => (e.target.textContent = '复制文件内容'), 1400);
+            } catch {}
+          });
+        } else {
+          const step = SIM_STEPS[simIndex];
+          mainViewer.innerHTML =
+            '<div class="sim-panel">' +
+              '<div class="stepper">' +
+                SIM_STEPS.map((s, idx) =>
+                  '<button type="button" class="step-btn ' + (idx === simIndex ? 'active' : '') + '" data-step="' + idx + '">' + escapeHtml(s.title) + '</button>'
+                ).join('') +
+              '</div>' +
+              '<div class="sim-body">' +
+                '<div class="sim-card">' +
+                  '<h3>开发者指令</h3>' +
+                  '<p>' + escapeHtml(step.prompt) + '</p>' +
+                '</div>' +
+                '<div class="sim-card ok">' +
+                  '<h3>本步命中的仓库文件（左侧绿框高亮，点击可跳回原文）</h3>' +
+                  '<div class="file-chips">' +
+                    step.lit.map((p) => '<button type="button" class="chip" data-jump="' + escapeHtml(p) + '">' + escapeHtml(p) + '</button>').join('') +
+                  '</div>' +
+                '</div>' +
+                '<div class="sim-card">' +
+                  '<h3>AI 执行动作</h3>' +
+                  '<p>' + escapeHtml(step.aiAction) + '</p>' +
+                '</div>' +
+                '<div class="sim-card ' + (step.tone === 'warn' ? 'warn' : 'ok') + '">' +
+                  '<h3>阶段输出</h3>' +
+                  '<pre>' + escapeHtml(step.output) + '</pre>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+
+          mainViewer.querySelectorAll('.step-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              simIndex = Number(btn.getAttribute('data-step'));
+              for (const litPath of SIM_STEPS[simIndex].lit) {
+                const parts = litPath.split('/');
+                for (let i = 1; i < parts.length; i++) openDirs.add(parts.slice(0, i).join('/'));
+              }
+              render();
+            });
+          });
+          mainViewer.querySelectorAll('[data-jump]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              currentFile = btn.getAttribute('data-jump');
+              mode = 'files';
+              syncModeTabs();
+              render();
+            });
+          });
+        }
+      }
+
+      function syncModeTabs() {
+        document.querySelectorAll('.mode-tab').forEach((t) => {
+          t.classList.toggle('active', t.getAttribute('data-mode') === mode);
+        });
+      }
+
+      function render() {
+        renderSidebar();
+        renderMain();
+      }
+
+      document.querySelectorAll('.mode-tab').forEach((t) => {
+        t.addEventListener('click', () => {
+          mode = t.getAttribute('data-mode');
+          syncModeTabs();
+          render();
+        });
+      });
+
+      document.getElementById('themeBtn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

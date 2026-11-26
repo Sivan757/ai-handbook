@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 382" width="820" height="382" role="img" aria-label="一次请求里有什么">
+  <rect width="820" height="382" rx="12" fill="#ffffff"/>
+  <style>
+    .t { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .h { font-size: 15px; font-weight: 600; fill: #1f2328 }
+    .s { font-size: 12px; fill: #6b7280 }
+    .b { font-size: 13px; fill: #1f2328 }
+    .box { fill: #f7f8fa; stroke: #d8dbe0; stroke-width: 1; rx: 8 }
+    .hot { fill: #eef2ff; stroke: #3451b2 }
+    .warn { fill: #fff4ed; stroke: #e07b39 }
+    .arrow { stroke: #9aa1ab; stroke-width: 1.5; fill: none; marker-end: url(#a) }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9aa1ab"/>
+    </marker>
+  </defs>
+  <text class="t h" x="24" y="30">一次请求里有什么</text>
+  <text class="t s" x="24" y="50">模型看不到它没被告知的东西。下面六层拼在一起，才是它这一次看到的全部。</text>
+  <rect class="t box" x="24" y="70" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="94">系统提示</text>
+  <text class="t s" x="190" y="94">工具自带的行为规则、工具清单</text>
+  <rect class="t box" x="24" y="116" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="140">全局指令</text>
+  <text class="t s" x="190" y="140">你个人的约定，对所有项目生效</text>
+  <rect class="t box" x="24" y="162" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="186">项目指令</text>
+  <text class="t s" x="190" y="186">仓库里的 AGENTS.md</text>
+  <rect class="t box" x="24" y="208" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="232">技能</text>
+  <text class="t s" x="190" y="232">按需加载的专项流程</text>
+  <rect class="t hot" x="24" y="254" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="278">对话历史</text>
+  <text class="t s" x="190" y="278">你的消息、AI 的回复、所有工具调用的结果</text>
+  <rect class="t box" x="24" y="300" width="560" height="38" rx="8"/>
+  <text class="t b" x="40" y="324">你这一次的消息</text>
+  <text class="t s" x="190" y="324">任务简报</text>
+  <rect class="t warn" x="620" y="140" width="176" height="94" rx="8"/>
+  <text class="t b" x="636" y="166">历史只增不减</text>
+  <text class="t s" x="636" y="188">每个文件、每条</text>
+  <text class="t s" x="636" y="204">命令的输出都留</text>
+  <text class="t s" x="636" y="220">在里面，每次重发。</text>
+  <path class="arrow" d="M588 167 L616 167"/>
+  <text class="t s" x="24" y="366">项目指令每次都加载，所以要短；技能按需加载，可以写长。</text>
+</svg>

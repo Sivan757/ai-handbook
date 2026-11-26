@@ -1,0 +1,68 @@
+@import "tailwindcss/theme.css" layer(theme);
+
+/* 用旧指令输出工具类，让它们落在无层级的规则里。
+   VitePress 的基础样式（button、ol、ul 的重置）是无层级的，
+   带 @layer 的工具类会被这些重置压掉。 */
+@tailwind utilities;
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 语义色沿用 VitePress 的主题变量，明暗两套自动跟随站点外观切换。 */
+:root {
+  --background: var(--vp-c-bg);
+  --foreground: var(--vp-c-text-1);
+  --card: var(--vp-c-bg-soft);
+  --card-foreground: var(--vp-c-text-1);
+  --popover: var(--vp-c-bg-soft);
+  --popover-foreground: var(--vp-c-text-1);
+  --primary: var(--vp-c-brand-1);
+  --primary-foreground: var(--vp-c-neutral-inverse);
+  --secondary: var(--vp-c-default-soft);
+  --secondary-foreground: var(--vp-c-text-1);
+  --muted: var(--vp-c-bg-soft);
+  --muted-foreground: var(--vp-c-text-2);
+  --accent: var(--vp-c-default-soft);
+  --accent-foreground: var(--vp-c-text-1);
+  --destructive: var(--vp-c-red-2);
+  --destructive-foreground: var(--vp-c-white);
+  --border: var(--vp-c-divider);
+  --input: var(--vp-c-divider);
+  --ring: var(--vp-c-brand-2);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+}
+
+/* shadcn 组件依赖「裸 border」取主题边框色，这里只作用于组件子树，避免影响正文排版。 */
+@layer base {
+  .shadcn-scope *,
+  .shadcn-scope *::before,
+  .shadcn-scope *::after {
+    border-color: var(--border);
+  }
+}

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 330" width="820" height="330" role="img" aria-label="验证的四个层次">
+  <rect width="820" height="330" rx="12" fill="#ffffff"/>
+  <style>
+    .t { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .h { font-size: 15px; font-weight: 600; fill: #1f2328 }
+    .s { font-size: 12px; fill: #6b7280 }
+    .b { font-size: 13px; fill: #1f2328 }
+    .box { fill: #f7f8fa; stroke: #d8dbe0; stroke-width: 1; rx: 8 }
+    .hot { fill: #eef2ff; stroke: #3451b2 }
+    .warn { fill: #fff4ed; stroke: #e07b39 }
+    .arrow { stroke: #9aa1ab; stroke-width: 1.5; fill: none; marker-end: url(#a) }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9aa1ab"/>
+    </marker>
+  </defs>
+  <text class="t h" x="24" y="30">验证的四个层次，越往下越可靠</text>
+  <rect class="t box" x="24" y="58" width="240" height="44" rx="8"/>
+  <text class="t b" x="40" y="85">读</text>
+  <text class="t s" x="150" y="85">看 diff</text>
+  <text class="t s" x="540" y="85">能发现：逻辑错误、超范围的改动</text>
+  <rect class="t box" x="24" y="118" width="300" height="44" rx="8"/>
+  <text class="t b" x="40" y="145">静态检查</text>
+  <text class="t s" x="150" y="145">编译、类型、语法</text>
+  <text class="t s" x="540" y="145">能发现：拼写、类型、语法</text>
+  <rect class="t box" x="24" y="178" width="360" height="44" rx="8"/>
+  <text class="t b" x="40" y="205">运行</text>
+  <text class="t s" x="150" y="205">测试、调接口、开页面</text>
+  <text class="t s" x="540" y="205">能发现：大部分功能错误</text>
+  <rect class="t hot" x="24" y="238" width="420" height="44" rx="8"/>
+  <text class="t b" x="40" y="265">核对数据</text>
+  <text class="t s" x="150" y="265">原始返回、库里的记录、日志</text>
+  <text class="t s" x="540" y="265">能发现：看起来对但数据不对</text>
+  <text class="t s" x="24" y="312">风险越高，越要往下走到「核对数据」。</text>
+</svg>

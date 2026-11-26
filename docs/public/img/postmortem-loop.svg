@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 290" width="820" height="290" role="img" aria-label="复盘四步与三条落点">
+  <rect width="820" height="290" rx="12" fill="#ffffff"/>
+  <style>
+    .t { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .h { font-size: 15px; font-weight: 600; fill: #1f2328 }
+    .s { font-size: 12px; fill: #6b7280 }
+    .b { font-size: 13px; font-weight: 600; fill: #1f2328 }
+    .box { fill: #f7f8fa; stroke: #d8dbe0; stroke-width: 1 }
+    .hot { fill: #eef2ff; stroke: #3451b2; stroke-width: 1 }
+    .arrow { stroke: #9aa1ab; stroke-width: 1.5; fill: none; marker-end: url(#a) }
+    .line { stroke: #9aa1ab; stroke-width: 1.5; fill: none }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9aa1ab"/>
+    </marker>
+  </defs>
+  <text class="t h" x="24" y="30">复盘四步，最后必须落到可执行的位置</text>
+
+  <rect class="box" x="24" y="52" width="168" height="82" rx="10"/>
+  <text class="t h" x="40" y="79">发生了什么</text>
+  <text class="t s" x="40" y="101">事实、时间线与影响</text>
+  <text class="t s" x="40" y="121">带命令和原始输出</text>
+  <path class="arrow" d="M196 93 L214 93"/>
+
+  <rect class="box" x="220" y="52" width="168" height="82" rx="10"/>
+  <text class="t h" x="236" y="79">怎么恢复的</text>
+  <text class="t s" x="236" y="101">止损与恢复步骤</text>
+  <text class="t s" x="236" y="121">怎样确认服务正常</text>
+  <path class="arrow" d="M392 93 L410 93"/>
+
+  <rect class="box" x="416" y="52" width="168" height="82" rx="10"/>
+  <text class="t h" x="432" y="79">错在哪</text>
+  <text class="t s" x="432" y="101">往回问流程与工具</text>
+  <text class="t s" x="432" y="121">不止步于「不小心」</text>
+  <path class="arrow" d="M588 93 L606 93"/>
+
+  <rect class="hot" x="612" y="52" width="184" height="82" rx="10"/>
+  <text class="t h" x="628" y="79">下次怎么做</text>
+  <text class="t s" x="628" y="101">写清动作、范围和判据</text>
+  <text class="t s" x="628" y="121">能回答「做了还是没做」</text>
+
+  <path class="line" d="M704 134 L704 156"/>
+  <path class="line" d="M144 156 L704 156"/>
+  <path class="arrow" d="M144 156 L144 176"/>
+  <path class="arrow" d="M410 156 L410 176"/>
+  <path class="arrow" d="M676 156 L676 176"/>
+
+  <rect class="box" x="24" y="180" width="240" height="68" rx="8"/>
+  <text class="t b" x="40" y="206">写进规则</text>
+  <text class="t s" x="40" y="230">全局指令或仓库 AGENTS.md</text>
+
+  <rect class="box" x="290" y="180" width="240" height="68" rx="8"/>
+  <text class="t b" x="306" y="206">加进清单</text>
+  <text class="t s" x="306" y="230">固定动作，用前逐条核对</text>
+
+  <rect class="box" x="556" y="180" width="240" height="68" rx="8"/>
+  <text class="t b" x="572" y="206">做成检查</text>
+  <text class="t s" x="572" y="230">机器能判的进流水线</text>
+
+  <text class="t s" x="24" y="274">停在复盘文档里，下一次没人翻到；写进规则、清单或检查才算数。</text>
+</svg>

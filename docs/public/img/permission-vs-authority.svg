@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 320" width="820" height="320" role="img" aria-label="能做与该做">
+  <rect width="820" height="320" rx="12" fill="#ffffff"/>
+  <defs>
+    <marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa1ab"/></marker>
+  </defs>
+  <style>
+    .t2 { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif }
+    .h2 { font-size: 15px; font-weight: 600; fill: #1f2328 }
+    .s2 { font-size: 12px; fill: #6b7280 }
+    .b2 { font-size: 13px; fill: #1f2328 }
+  </style>
+
+  <text class="t2 h2" x="24" y="30">有权限，不等于被授权</text>
+  <text class="t2 s2" x="24" y="50">AI 用的是你的账号。它能做你都能做的事，但不代表现在就该做。</text>
+  <rect x="24" y="72" width="370" height="200" rx="8" fill="#f0fdf4" stroke="#22c55e"/>
+  <text class="t2 b2" x="40" y="98">可以自己决定</text>
+  <text class="t2 s2" x="40" y="124">读代码、跑测试、查日志</text>
+  <text class="t2 s2" x="40" y="146">在分支上改代码、写文档</text>
+  <text class="t2 s2" x="40" y="168">本地起服务、截图对比</text>
+  <text class="t2 s2" x="40" y="190">写脚本、整理数据</text>
+  <rect x="426" y="72" width="370" height="200" rx="8" fill="#fff4ed" stroke="#e07b39"/>
+  <text class="t2 b2" x="442" y="98">先报方案，等明确同意</text>
+  <text class="t2 s2" x="442" y="124">删除、覆盖、强制推送</text>
+  <text class="t2 s2" x="442" y="146">测试与生产的写操作</text>
+  <text class="t2 s2" x="442" y="168">创建凭据、改权限</text>
+  <text class="t2 s2" x="442" y="190">发到群、发给外部</text>
+  <text class="t2 s2" x="24" y="300">「你能查」不等于「你能改」。读和写要分别取得许可。</text>
+</svg>

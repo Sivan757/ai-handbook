@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 300" width="820" height="300" role="img" aria-label="一个会话的生命周期">
+  <rect width="820" height="300" rx="12" fill="#ffffff"/>
+  <style>
+    .t { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .h { font-size: 15px; font-weight: 600; fill: #1f2328 }
+    .s { font-size: 12px; fill: #6b7280 }
+    .b { font-size: 13px; fill: #1f2328 }
+    .box { fill: #f7f8fa; stroke: #d8dbe0; stroke-width: 1; rx: 8 }
+    .hot { fill: #eef2ff; stroke: #3451b2 }
+    .warn { fill: #fff4ed; stroke: #e07b39 }
+    .arrow { stroke: #9aa1ab; stroke-width: 1.5; fill: none; marker-end: url(#a) }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9aa1ab"/>
+    </marker>
+  </defs>
+  <text class="t h" x="24" y="30">一个会话的生命周期</text>
+  <line x1="40" y1="120" x2="780" y2="120" stroke="#d8dbe0" stroke-width="2"/>
+  <circle cx="60" cy="120" r="7" fill="#3451b2"/>
+  <text class="t h" x="44" y="104">开工</text>
+  <text class="t s" x="44" y="150">在项目目录里，带着项目指令</text>
+  <circle cx="250" cy="120" r="7" fill="#3451b2"/>
+  <text class="t h" x="234" y="104">推进</text>
+  <text class="t s" x="234" y="150">一个会话只做一件事</text>
+  <circle cx="450" cy="120" r="7" fill="#e07b39"/>
+  <text class="t h" x="434" y="104">变慢</text>
+  <text class="t s" x="434" y="150">忘事、变慢、开始跑偏</text>
+  <circle cx="640" cy="120" r="7" fill="#3451b2"/>
+  <text class="t h" x="624" y="104">交接</text>
+  <text class="t s" x="624" y="150">让它写一份交接单</text>
+  <rect class="t warn" x="600" y="176" width="196" height="86" rx="8"/>
+  <text class="t b" x="616" y="200">别等它自动压缩</text>
+  <text class="t s" x="616" y="222">压缩会把细节压成摘要，</text>
+  <text class="t s" x="616" y="240">压掉什么不由你决定。</text>
+  <path class="arrow" d="M470 196 C520 216, 560 216, 596 216"/>
+  <text class="t s" x="40" y="196">新会话接着做：读交接单，先用三句话复述目标和现状。</text>
+  <line x1="700" y1="130" x2="700" y2="176" stroke="#9aa1ab" stroke-width="1.5" stroke-dasharray="4 3"/>
+</svg>
