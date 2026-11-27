@@ -78,7 +78,7 @@ const toastMsg = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 let renderTimer: ReturnType<typeof setTimeout> | null = null
 
-const isHome = computed(() => page.value.frontmatter?.layout === 'home' || normalizePath(typeof window !== 'undefined' ? window.location.pathname : '/') === '/')
+const isHome = computed(() => page.value.frontmatter?.layout === 'home' || page.value.relativePath === 'index.md')
 const openAnnotations = computed(() => annotations.value.filter((a) => a.status === 'open'))
 const resolvedAnnotations = computed(() => annotations.value.filter((a) => a.status === 'resolved'))
 
