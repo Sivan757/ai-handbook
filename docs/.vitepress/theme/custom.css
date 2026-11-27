@@ -184,3 +184,27 @@
   .vp-doc table { display: block; overflow-x: auto; }
   .vp-doc th, .vp-doc td { white-space: nowrap; }
 }
+
+/* ---------- 七、全局批注虚线辅助线 ---------- */
+.vp-doc mark.bk-annot-mark {
+  background: rgba(0, 110, 187, 0.06);
+  color: inherit;
+  border-bottom: 1.5px dashed var(--bk-accent);
+  border-radius: 2px;
+  padding: 1px 0;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.vp-doc mark.bk-annot-mark:hover {
+  background: rgba(0, 110, 187, 0.14);
+}
+.vp-doc mark.bk-annot-mark.is-flash {
+  background: rgba(0, 154, 69, 0.22);
+  border-bottom-color: var(--bk-green);
+}
+.dark .vp-doc mark.bk-annot-mark {
+  background: rgba(91, 167, 224, 0.12);
+}
+.dark .vp-doc mark.bk-annot-mark:hover {
+  background: rgba(91, 167, 224, 0.22);
+}

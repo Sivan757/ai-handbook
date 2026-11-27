@@ -5,6 +5,7 @@ import DefaultTheme from 'vitepress/theme'
 import PageMeta from './components/PageMeta.vue'
 import ReadingProgress from './components/ReadingProgress.vue'
 import ChapterMark from './components/ChapterMark.vue'
+import AnnotationLayer from './components/AnnotationLayer.vue'
 import { setupReveal } from './reveal'
 
 const { Layout } = DefaultTheme
@@ -42,4 +43,5 @@ onUnmounted(() => {
       <PageMeta />
     </template>
   </Layout>
+  <AnnotationLayer />
 </template>

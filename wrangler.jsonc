@@ -1,14 +1,25 @@
 {
   "name": "ai-handbook",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./docs/.vitepress/dist",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
   },
   "routes": [
     {
       "pattern": "ai-handbook.kapukapu.cn",
       "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ai-handbook-annotations",
+      "database_id": "982025d1-51cc-461d-8b7b-ea37d2f33080",
+      "migrations_dir": "migrations"
     }
   ]
 }

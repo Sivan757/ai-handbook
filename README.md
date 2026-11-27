@@ -47,6 +47,18 @@ node tools/check-links.mjs        # 外部链接连通性检查（可选）
   pnpm build && npx wrangler deploy
   ```
 
+## 全局批注与修订建议
+
+站点通过同域 Worker（[worker/index.ts](worker/index.ts)）与 Cloudflare D1 提供全局批注功能：
+
+- 读者可开启右下角「批注模式」划词提修改建议，或点击正文虚线辅助线查看与回复批注（称呼必填，邮箱选填且不公开返回）。
+- 已采纳的建议会收起正文虚线，同时保留在页面「批注记录 → 已采纳修订」中展示贡献者。
+- 维护者或 AI 可通过 [tools/annotations.mjs](tools/annotations.mjs) 批量拉取与处理建议（需在环境变量或 `.env.local` 配置 `ANNOTATIONS_ADMIN_TOKEN`）：
+  ```bash
+  pnpm annotations:pull
+  pnpm annotations:resolve <id1,id2> --note "已采纳修改"
+  ```
+
 ## 目录说明
 
 ```text
@@ -54,8 +66,10 @@ node tools/check-links.mjs        # 外部链接连通性检查（可选）
 ├── .github/workflows/deploy.yml   # 自动校验与 Cloudflare 部署工作流
 ├── ai-docs/glossary.md            # 自动生成的术语对照表
 ├── docs/                          # 手册正文、插图与 VitePress 主题
-├── tools/                         # 术语、文风、时效、链接与公开性校验脚本
+├── migrations/                    # Cloudflare D1 数据库结构迁移
+├── tools/                         # 校验脚本与批注管理 CLI
+├── worker/                        # Cloudflare Worker（/api/* 批注接口 + 静态资源）
 ├── AGENTS.md                      # 写作定位、语感与术语约定
 ├── package.json
-└── wrangler.jsonc                 # Cloudflare Workers 静态资源与域名配置
+└── wrangler.jsonc                 # Cloudflare Workers、Static Assets 与 D1 配置
 ```
