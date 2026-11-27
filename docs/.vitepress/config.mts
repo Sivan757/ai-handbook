@@ -13,8 +13,7 @@ const sidebar = parts.map((p) => ({
 const front = parts.filter((p) => ['craft', 'ai', 'ship'].includes(p.id))
 const extra = parts.filter((p) => p.id === 'appendix')
 
-// GitHub Pages 项目站点部署在 /<仓库名>/ 下，Cloudflare 与本地预览使用 /。
-// 构建时可通过 DOCS_BASE 传入前缀，统一规范为带首尾斜杠的路径。
+// 默认部署在域名根路径 /；如需挂载到子路径可通过 DOCS_BASE 传入。
 const rawBase = process.env.DOCS_BASE || '/'
 const trimmedBase = rawBase.replace(/^\/+|\/+$/g, '')
 const base = trimmedBase ? `/${trimmedBase}/` : '/'
