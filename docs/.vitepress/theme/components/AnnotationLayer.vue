@@ -42,6 +42,8 @@ interface SelectionDraft {
 
 const STORAGE_NAME_KEY = 'bk-annot-author-name'
 const STORAGE_EMAIL_KEY = 'bk-annot-author-email'
+const STORAGE_DEL_ANNOT_KEY = 'bk-annot-delete-tokens'
+const STORAGE_DEL_REPLY_KEY = 'bk-annot-reply-delete-tokens'
 const SKIP_SELECTOR =
   '.bk-annot-ignore, .bk-cover, .qz, .rs-wrap, .vs-box, .sp, .pm, .header-anchor, button, svg, script, style, textarea, input, select'
 
@@ -74,11 +76,17 @@ const replyText = ref('')
 const replySubmitting = ref(false)
 const replyError = ref('')
 
+const annotDeleteTokens = ref<Record<string, string>>({})
+const replyDeleteTokens = ref<Record<string, string>>({})
+const confirmDeleteId = ref<string | null>(null)
+const confirmDeleteReplyId = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
+const deleteError = ref('')
+
 const toastMsg = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 let renderTimer: ReturnType<typeof setTimeout> | null = null
-
-const isHome = computed(() => page.value.frontmatter?.layout === 'home' || page.value.relativePath === 'index.md')
+let confirmTimer: ReturnType<typeof setTimeout> | null = null
 const openAnnotations = computed(() => annotations.value.filter((a) => a.status === 'open'))
 const resolvedAnnotations = computed(() => annotations.value.filter((a) => a.status === 'resolved'))
 
@@ -119,6 +127,25 @@ function showToast(msg: string) {
   }, 2600)
 }
 
+function readTokenMap(key: string): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeTokenMap(key: string, map: Record<string, string>) {
+  try {
+    localStorage.setItem(key, JSON.stringify(map))
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function loadIdentity() {
   try {
     authorName.value = localStorage.getItem(STORAGE_NAME_KEY) || ''
@@ -126,6 +153,8 @@ function loadIdentity() {
   } catch {
     // ignore storage errors
   }
+  annotDeleteTokens.value = readTokenMap(STORAGE_DEL_ANNOT_KEY)
+  replyDeleteTokens.value = readTokenMap(STORAGE_DEL_REPLY_KEY)
 }
 
 function saveIdentity() {
@@ -135,6 +164,32 @@ function saveIdentity() {
   } catch {
     // ignore storage errors
   }
+}
+
+function saveAnnotToken(id: string, token: string) {
+  if (!token) return
+  annotDeleteTokens.value = { ...annotDeleteTokens.value, [id]: token }
+  writeTokenMap(STORAGE_DEL_ANNOT_KEY, annotDeleteTokens.value)
+}
+
+function removeAnnotToken(id: string) {
+  const next = { ...annotDeleteTokens.value }
+  delete next[id]
+  annotDeleteTokens.value = next
+  writeTokenMap(STORAGE_DEL_ANNOT_KEY, next)
+}
+
+function saveReplyToken(id: string, token: string) {
+  if (!token) return
+  replyDeleteTokens.value = { ...replyDeleteTokens.value, [id]: token }
+  writeTokenMap(STORAGE_DEL_REPLY_KEY, replyDeleteTokens.value)
+}
+
+function removeReplyToken(id: string) {
+  const next = { ...replyDeleteTokens.value }
+  delete next[id]
+  replyDeleteTokens.value = next
+  writeTokenMap(STORAGE_DEL_REPLY_KEY, next)
 }
 
 function formatTime(iso: string): string {
@@ -532,12 +587,17 @@ async function submitAnnotation() {
     if (!ctype.includes('application/json')) {
       throw new Error('当前本地预览环境未连接批注服务，线上站点可正常提交')
     }
-    const data = (await res.json()) as { annotation?: AnnotationItem; error?: string }
+    const data = (await res.json()) as {
+      annotation?: AnnotationItem
+      delete_token?: string
+      error?: string
+    }
     if (!res.ok || !data.annotation) {
       throw new Error(data.error || '提交失败，请稍后重试')
     }
 
     saveIdentity()
+    if (data.delete_token) saveAnnotToken(data.annotation.id, data.delete_token)
     annotations.value = [...annotations.value, data.annotation]
     activeIds.value = [data.annotation.id]
     draftSelection.value = null
@@ -586,12 +646,17 @@ async function submitReply(annotationId: string) {
     if (!ctype.includes('application/json')) {
       throw new Error('当前本地预览环境未连接批注服务')
     }
-    const data = (await res.json()) as { reply?: ReplyItem; error?: string }
+    const data = (await res.json()) as {
+      reply?: ReplyItem
+      delete_token?: string
+      error?: string
+    }
     if (!res.ok || !data.reply) {
       throw new Error(data.error || '回复失败，请稍后重试')
     }
 
     saveIdentity()
+    if (data.delete_token) saveReplyToken(data.reply.id, data.delete_token)
     const target = annotations.value.find((a) => a.id === annotationId)
     if (target) {
       target.replies = [...target.replies, data.reply]
@@ -605,14 +670,105 @@ async function submitReply(annotationId: string) {
   }
 }
 
+async function deleteAnnotation(annotationId: string) {
+  if (confirmDeleteId.value !== annotationId) {
+    confirmDeleteId.value = annotationId
+    confirmDeleteReplyId.value = null
+    deleteError.value = ''
+    if (confirmTimer) clearTimeout(confirmTimer)
+    confirmTimer = setTimeout(() => {
+      if (confirmDeleteId.value === annotationId) confirmDeleteId.value = null
+    }, 4000)
+    return
+  }
+
+  const token = annotDeleteTokens.value[annotationId]
+  if (!token) return
+
+  deletingId.value = annotationId
+  deleteError.value = ''
+  try {
+    const res = await fetch(`/api/annotations/${encodeURIComponent(annotationId)}`, {
+      method: 'DELETE',
+      headers: { 'x-delete-token': token },
+    })
+    const data = (await res.json()) as { deleted?: boolean; error?: string }
+    if (!res.ok || !data.deleted) {
+      throw new Error(data.error || '删除失败，请稍后重试')
+    }
+
+    removeAnnotToken(annotationId)
+    annotations.value = annotations.value.filter((a) => a.id !== annotationId)
+    activeIds.value = activeIds.value.filter((id) => id !== annotationId)
+    confirmDeleteId.value = null
+    if (popoverOpen.value && !draftSelection.value && activeIds.value.length === 0) {
+      closePopover()
+    }
+    await nextTick()
+    applyHighlights()
+    showToast('已删除该条批注')
+  } catch (err) {
+    deleteError.value = err instanceof Error ? err.message : '删除失败，请稍后重试'
+  } finally {
+    deletingId.value = null
+  }
+}
+
+async function deleteReply(annotationId: string, replyId: string) {
+  if (confirmDeleteReplyId.value !== replyId) {
+    confirmDeleteReplyId.value = replyId
+    confirmDeleteId.value = null
+    deleteError.value = ''
+    if (confirmTimer) clearTimeout(confirmTimer)
+    confirmTimer = setTimeout(() => {
+      if (confirmDeleteReplyId.value === replyId) confirmDeleteReplyId.value = null
+    }, 4000)
+    return
+  }
+
+  const token = replyDeleteTokens.value[replyId]
+  if (!token) return
+
+  deletingId.value = replyId
+  deleteError.value = ''
+  try {
+    const res = await fetch(
+      `/api/annotations/${encodeURIComponent(annotationId)}/replies/${encodeURIComponent(replyId)}`,
+      {
+        method: 'DELETE',
+        headers: { 'x-delete-token': token },
+      }
+    )
+    const data = (await res.json()) as { deleted?: boolean; error?: string }
+    if (!res.ok || !data.deleted) {
+      throw new Error(data.error || '删除失败，请稍后重试')
+    }
+
+    removeReplyToken(replyId)
+    const target = annotations.value.find((a) => a.id === annotationId)
+    if (target) {
+      target.replies = target.replies.filter((r) => r.id !== replyId)
+    }
+    confirmDeleteReplyId.value = null
+    showToast('已删除该条回复')
+  } catch (err) {
+    deleteError.value = err instanceof Error ? err.message : '删除失败，请稍后重试'
+  } finally {
+    deletingId.value = null
+  }
+}
+
 function closePopover() {
   popoverOpen.value = false
   draftSelection.value = null
   activeIds.value = []
   openReplyForId.value = null
+  confirmDeleteId.value = null
+  confirmDeleteReplyId.value = null
   submitError.value = ''
   submitSuccess.value = ''
   replyError.value = ''
+  deleteError.value = ''
 }
 
 function toggleAnnotateMode() {
@@ -688,6 +844,7 @@ watch(
 onUnmounted(() => {
   if (toastTimer) clearTimeout(toastTimer)
   if (renderTimer) clearTimeout(renderTimer)
+  if (confirmTimer) clearTimeout(confirmTimer)
   unwrapMarks()
   document.removeEventListener('click', handleDocumentClick, true)
   document.removeEventListener('mouseup', handleSelectionEnd)
@@ -708,7 +865,6 @@ onUnmounted(() => {
     <!-- 右下角轻量浮动工具栏 -->
     <div class="bk-annot-dock">
       <button
-        v-if="!isHome"
         type="button"
         class="bk-annot-pill"
         :class="{ active: annotateMode }"
@@ -795,6 +951,15 @@ onUnmounted(() => {
                     <span class="bk-annot-author">{{ rep.author_name }}</span>
                     <span v-if="rep.is_maintainer" class="bk-annot-badge maintainer">维护者</span>
                     <span class="bk-annot-time">{{ formatTime(rep.created_at) }}</span>
+                    <button
+                      v-if="replyDeleteTokens[rep.id]"
+                      type="button"
+                      class="bk-annot-del-btn"
+                      :disabled="deletingId === rep.id"
+                      @click="deleteReply(item.id, rep.id)"
+                    >
+                      {{ confirmDeleteReplyId === rep.id ? '确认删除？' : '删除' }}
+                    </button>
                   </div>
                   <p class="bk-annot-reply-body">{{ rep.body }}</p>
                 </div>
@@ -808,7 +973,17 @@ onUnmounted(() => {
                 >
                   {{ openReplyForId === item.id ? '收起回复' : '补充评论 / 回复' }}
                 </button>
+                <button
+                  v-if="annotDeleteTokens[item.id]"
+                  type="button"
+                  class="bk-annot-del-btn"
+                  :disabled="deletingId === item.id"
+                  @click="deleteAnnotation(item.id)"
+                >
+                  {{ confirmDeleteId === item.id ? '确认删除？' : '删除我的批注' }}
+                </button>
               </div>
+              <p v-if="deleteError" class="bk-annot-msg err">{{ deleteError }}</p>
 
               <!-- 回复表单 -->
               <div v-if="openReplyForId === item.id" class="bk-annot-reply-form">
@@ -936,9 +1111,20 @@ onUnmounted(() => {
               </div>
               <p class="bk-annot-drawer-quote">「{{ item.quote_text }}」</p>
               <p class="bk-annot-card-text">{{ item.suggestion }}</p>
-              <p class="bk-annot-drawer-hint">
-                {{ item.replies.length ? `${item.replies.length} 条回复 · ` : '' }}点击定位到原文
-              </p>
+              <div class="bk-annot-drawer-foot">
+                <span class="bk-annot-drawer-hint">
+                  {{ item.replies.length ? `${item.replies.length} 条回复 · ` : '' }}点击定位到原文
+                </span>
+                <button
+                  v-if="annotDeleteTokens[item.id]"
+                  type="button"
+                  class="bk-annot-del-btn"
+                  :disabled="deletingId === item.id"
+                  @click.stop="deleteAnnotation(item.id)"
+                >
+                  {{ confirmDeleteId === item.id ? '确认删除？' : '删除' }}
+                </button>
+              </div>
             </article>
           </template>
 
@@ -961,6 +1147,17 @@ onUnmounted(() => {
               <p v-if="item.resolution_note" class="bk-annot-res-note">
                 修订说明：{{ item.resolution_note }}
               </p>
+              <div v-if="annotDeleteTokens[item.id]" class="bk-annot-drawer-foot">
+                <span></span>
+                <button
+                  type="button"
+                  class="bk-annot-del-btn"
+                  :disabled="deletingId === item.id"
+                  @click.stop="deleteAnnotation(item.id)"
+                >
+                  {{ confirmDeleteId === item.id ? '确认删除？' : '删除' }}
+                </button>
+              </div>
             </article>
           </template>
         </div>
@@ -1232,6 +1429,32 @@ onUnmounted(() => {
 }
 .bk-annot-card-actions {
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.bk-annot-del-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  color: #dc2626;
+  cursor: pointer;
+}
+.bk-annot-del-btn:hover {
+  text-decoration: underline;
+}
+.bk-annot-del-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bk-annot-drawer-foot {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .bk-annot-link-btn {
   border: none;
@@ -1434,7 +1657,7 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 .bk-annot-drawer-hint {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 11px;
   color: var(--bk-accent);
 }

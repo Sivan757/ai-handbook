@@ -20,7 +20,7 @@ interface Env {
   ADMIN_TOKEN?: string
 }
 
-type AnnotationStatus = 'open' | 'resolved' | 'dismissed'
+type AnnotationStatus = 'open' | 'resolved' | 'dismissed' | 'deleted'
 
 interface AnnotationRow {
   id: string
@@ -32,6 +32,7 @@ interface AnnotationRow {
   suggestion: string
   author_name: string
   author_email?: string
+  delete_token_hash?: string
   status: AnnotationStatus
   resolution_note: string
   created_at: string
@@ -44,12 +45,15 @@ interface ReplyRow {
   body: string
   author_name: string
   author_email?: string
+  delete_token_hash?: string
+  status?: 'active' | 'deleted'
   is_maintainer: number
   created_at: string
 }
 
 const RATE_WINDOW_MS = 10 * 60 * 1000
 const RATE_MAX_WRITES = 20
+const VALID_STATUSES: AnnotationStatus[] = ['open', 'resolved', 'dismissed', 'deleted']
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -95,6 +99,13 @@ async function sha256Bytes(input: string): Promise<Uint8Array> {
 async function sha256Hex(input: string): Promise<string> {
   const bytes = await sha256Bytes(input)
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+function equalHex(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
 }
 
 async function isAuthorizedAdmin(request: Request, env: Env): Promise<boolean> {
@@ -151,13 +162,13 @@ async function fetchPublicAnnotations(env: Env, pagePath: string) {
   const { results: replies } = await env.DB.prepare(
     `SELECT id, annotation_id, body, author_name, is_maintainer, created_at
      FROM annotation_replies
-     WHERE annotation_id IN (${placeholders})
+     WHERE annotation_id IN (${placeholders}) AND status = 'active'
      ORDER BY created_at ASC`
   )
     .bind(...rows.map((r) => r.id))
     .all<ReplyRow>()
 
-  const replyMap = new Map<string, Array<Omit<ReplyRow, 'author_email'>>>()
+  const replyMap = new Map<string, Array<Omit<ReplyRow, 'author_email' | 'delete_token_hash' | 'status'>>>()
   for (const r of replies) {
     const list = replyMap.get(r.annotation_id) || []
     list.push({
@@ -185,7 +196,6 @@ async function handleCreateAnnotation(request: Request, env: Env): Promise<Respo
     return json({ error: '请求体必须是有效 JSON' }, 400)
   }
 
-  // 蜜罐字段：正常用户留空
   if (typeof body.website === 'string' && body.website.trim() !== '') {
     return json({ error: '提交被拦截' }, 400)
   }
@@ -214,13 +224,15 @@ async function handleCreateAnnotation(request: Request, env: Env): Promise<Respo
   if (!isValidEmail(authorEmail)) return json({ error: '邮箱格式看起来不太对，请检查或留空' }, 400)
 
   const id = crypto.randomUUID()
+  const deleteToken = crypto.randomUUID()
+  const deleteTokenHash = await sha256Hex(`annot-del:${deleteToken}`)
   const now = new Date().toISOString()
 
   await env.DB.prepare(
     `INSERT INTO annotations
        (id, page_path, heading_id, quote_text, quote_prefix, quote_suffix,
-        suggestion, author_name, author_email, status, resolution_note, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'open', '', ?10, ?10)`
+        suggestion, author_name, author_email, delete_token_hash, status, resolution_note, created_at, updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'open', '', ?11, ?11)`
   )
     .bind(
       id,
@@ -232,6 +244,7 @@ async function handleCreateAnnotation(request: Request, env: Env): Promise<Respo
       suggestion,
       authorName,
       authorEmail,
+      deleteTokenHash,
       now
     )
     .run()
@@ -253,9 +266,45 @@ async function handleCreateAnnotation(request: Request, env: Env): Promise<Respo
         updated_at: now,
         replies: [],
       },
+      delete_token: deleteToken,
     },
     201
   )
+}
+
+async function handleDeleteAnnotation(request: Request, env: Env, annotationId: string): Promise<Response> {
+  const isMaintainer = await isAuthorizedAdmin(request, env)
+  const token = (request.headers.get('x-delete-token') || '').trim()
+
+  if (!isMaintainer && !token) {
+    return json({ error: '缺少删除凭证' }, 401)
+  }
+
+  const row = await env.DB.prepare(
+    'SELECT id, status, delete_token_hash FROM annotations WHERE id = ?1'
+  )
+    .bind(annotationId)
+    .first<{ id: string; status: AnnotationStatus; delete_token_hash: string }>()
+
+  if (!row || row.status === 'deleted') {
+    return json({ error: '对应批注不存在或已删除' }, 404)
+  }
+
+  if (!isMaintainer) {
+    const providedHash = await sha256Hex(`annot-del:${token}`)
+    if (!equalHex(providedHash, row.delete_token_hash || '')) {
+      return json({ error: '无权删除该批注' }, 403)
+    }
+  }
+
+  const now = new Date().toISOString()
+  await env.DB.prepare(
+    "UPDATE annotations SET status = 'deleted', updated_at = ?1 WHERE id = ?2"
+  )
+    .bind(now, annotationId)
+    .run()
+
+  return json({ deleted: true, id: annotationId })
 }
 
 async function handleCreateReply(request: Request, env: Env, annotationId: string): Promise<Response> {
@@ -284,7 +333,7 @@ async function handleCreateReply(request: Request, env: Env, annotationId: strin
     .bind(annotationId)
     .first<{ id: string; status: AnnotationStatus }>()
 
-  if (!existing || existing.status === 'dismissed') {
+  if (!existing || existing.status === 'dismissed' || existing.status === 'deleted') {
     return json({ error: '对应批注不存在' }, 404)
   }
 
@@ -297,14 +346,16 @@ async function handleCreateReply(request: Request, env: Env, annotationId: strin
   if (!isValidEmail(authorEmail)) return json({ error: '邮箱格式看起来不太对，请检查或留空' }, 400)
 
   const id = crypto.randomUUID()
+  const deleteToken = crypto.randomUUID()
+  const deleteTokenHash = await sha256Hex(`reply-del:${deleteToken}`)
   const now = new Date().toISOString()
 
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO annotation_replies
-         (id, annotation_id, body, author_name, author_email, is_maintainer, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`
-    ).bind(id, annotationId, replyBody, authorName, authorEmail, isMaintainer, now),
+         (id, annotation_id, body, author_name, author_email, delete_token_hash, status, is_maintainer, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'active', ?7, ?8)`
+    ).bind(id, annotationId, replyBody, authorName, authorEmail, deleteTokenHash, isMaintainer, now),
     env.DB.prepare('UPDATE annotations SET updated_at = ?1 WHERE id = ?2').bind(now, annotationId),
   ])
 
@@ -318,9 +369,49 @@ async function handleCreateReply(request: Request, env: Env, annotationId: strin
         is_maintainer: isMaintainer,
         created_at: now,
       },
+      delete_token: deleteToken,
     },
     201
   )
+}
+
+async function handleDeleteReply(
+  request: Request,
+  env: Env,
+  annotationId: string,
+  replyId: string
+): Promise<Response> {
+  const isMaintainer = await isAuthorizedAdmin(request, env)
+  const token = (request.headers.get('x-delete-token') || '').trim()
+
+  if (!isMaintainer && !token) {
+    return json({ error: '缺少删除凭证' }, 401)
+  }
+
+  const row = await env.DB.prepare(
+    'SELECT id, status, delete_token_hash FROM annotation_replies WHERE id = ?1 AND annotation_id = ?2'
+  )
+    .bind(replyId, annotationId)
+    .first<{ id: string; status: string; delete_token_hash: string }>()
+
+  if (!row || row.status === 'deleted') {
+    return json({ error: '对应回复不存在或已删除' }, 404)
+  }
+
+  if (!isMaintainer) {
+    const providedHash = await sha256Hex(`reply-del:${token}`)
+    if (!equalHex(providedHash, row.delete_token_hash || '')) {
+      return json({ error: '无权删除该回复' }, 403)
+    }
+  }
+
+  await env.DB.prepare(
+    "UPDATE annotation_replies SET status = 'deleted' WHERE id = ?1 AND annotation_id = ?2"
+  )
+    .bind(replyId, annotationId)
+    .run()
+
+  return json({ deleted: true, id: replyId })
 }
 
 async function handleAdminList(url: URL, env: Env): Promise<Response> {
@@ -330,7 +421,7 @@ async function handleAdminList(url: URL, env: Env): Promise<Response> {
   const where: string[] = []
 
   if (statusParam !== 'all') {
-    if (!['open', 'resolved', 'dismissed'].includes(statusParam)) {
+    if (!VALID_STATUSES.includes(statusParam as AnnotationStatus)) {
       return json({ error: '无效的 status 参数' }, 400)
     }
     params.push(statusParam)
@@ -357,7 +448,7 @@ async function handleAdminList(url: URL, env: Env): Promise<Response> {
 
   const placeholders = rows.map((_, i) => `?${i + 1}`).join(', ')
   const { results: replies } = await env.DB.prepare(
-    `SELECT id, annotation_id, body, author_name, author_email, is_maintainer, created_at
+    `SELECT id, annotation_id, body, author_name, author_email, status, is_maintainer, created_at
      FROM annotation_replies
      WHERE annotation_id IN (${placeholders})
      ORDER BY created_at ASC`
@@ -396,7 +487,7 @@ async function handleAdminBatchUpdate(request: Request, env: Env): Promise<Respo
   const updates: Array<{ id: string; status: AnnotationStatus; resolution_note: string }> = []
   if (Array.isArray(body.items)) {
     for (const it of body.items) {
-      if (!it || typeof it.id !== 'string' || !['open', 'resolved', 'dismissed'].includes(it.status)) {
+      if (!it || typeof it.id !== 'string' || !VALID_STATUSES.includes(it.status)) {
         return json({ error: 'items 中存在无效条目' }, 400)
       }
       updates.push({
@@ -405,7 +496,7 @@ async function handleAdminBatchUpdate(request: Request, env: Env): Promise<Respo
         resolution_note: cleanText(it.resolution_note, 300),
       })
     }
-  } else if (Array.isArray(body.ids) && body.status && ['open', 'resolved', 'dismissed'].includes(body.status)) {
+  } else if (Array.isArray(body.ids) && body.status && VALID_STATUSES.includes(body.status)) {
     const note = cleanText(body.resolution_note, 300)
     for (const id of body.ids) {
       if (typeof id === 'string' && id) {
@@ -451,9 +542,21 @@ export default {
       return handleCreateAnnotation(request, env)
     }
 
+    const annotMatch = url.pathname.match(/^\/api\/annotations\/([0-9a-f-]{8,64})$/i)
+    if (annotMatch && request.method === 'DELETE') {
+      return handleDeleteAnnotation(request, env, annotMatch[1])
+    }
+
     const replyMatch = url.pathname.match(/^\/api\/annotations\/([0-9a-f-]{8,64})\/replies$/i)
     if (replyMatch && request.method === 'POST') {
       return handleCreateReply(request, env, replyMatch[1])
+    }
+
+    const replyDelMatch = url.pathname.match(
+      /^\/api\/annotations\/([0-9a-f-]{8,64})\/replies\/([0-9a-f-]{8,64})$/i
+    )
+    if (replyDelMatch && request.method === 'DELETE') {
+      return handleDeleteReply(request, env, replyDelMatch[1], replyDelMatch[2])
     }
 
     if (url.pathname.startsWith('/api/admin/')) {

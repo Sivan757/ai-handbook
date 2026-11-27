@@ -1,6 +1,6 @@
 // 批注管理脚本：供维护者或 AI 批量拉取未处理建议并更新状态。
 // 用法：
-//   node tools/annotations.mjs pull [--status open|resolved|dismissed|all] [--page /ai/02-brief] [--json]
+//   node tools/annotations.mjs pull [--status open|resolved|dismissed|deleted|all] [--page /ai/02-brief] [--json]
 //   node tools/annotations.mjs resolve <id1,id2,...> [--note "已采纳修改"]
 //   node tools/annotations.mjs dismiss <id1,id2,...> [--note "原因"]
 //   node tools/annotations.mjs reply <id> --body "回复内容" [--author "维护者"]
